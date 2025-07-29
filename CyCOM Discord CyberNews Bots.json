@@ -1,0 +1,2383 @@
+{
+  "name": "CyCOM Discord CyberNews Bots",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://feeds.feedburner.com/TheHackersNews?format=xml",
+        "options": {
+          "ignoreSSL": false
+        }
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -880,
+        112
+      ],
+      "id": "1e647b04-cb49-4ad9-8e27-852fdad32b71",
+      "name": "RSS Read From HackerNews6"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -688,
+        112
+      ],
+      "id": "64f932c8-ba28-4121-9bbd-7ef7e694b922",
+      "name": "Limit14"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -288,
+        128
+      ],
+      "id": "becd25ee-ca00-4106-8864-e46870e64bd6",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// STEP 1: Get and clean the new link from RSS\nconst newLinkRaw = $input.item.json.link?.trim();\nif (!newLinkRaw) {\n  return [{ json: { check: \"false\", error: \"No link found\" } }];\n}\n\n// STEP 2: Normalize URL for comparison\nfunction cleanUrl(url) {\n  try {\n    const u = new URL(url.trim());\n    return (u.origin + u.pathname).toLowerCase().replace(/\\/+$/, \"\");\n  } catch (err) {\n    return url.trim().toLowerCase().replace(/\\/+$/, \"\");\n  }\n}\nconst newLink = cleanUrl(newLinkRaw);\n\n// STEP 3: Get ALL existing links from sheet (input 1)\n// $input.all() returns [ new_item, sheet_row_1, sheet_row_2, ... ]\n// So skip the first item (it's the new one), and get links from the rest\nconst existingLinks = $input.all()\n  .slice(1) // all items from input 1 (sheet data)\n  .map(item => {\n    const link = item.json?.link || item.link;\n    return link ? cleanUrl(link) : null;\n  })\n  .filter(Boolean);\n\n// STEP 4: Check for duplicate\nconst isDuplicate = existingLinks.includes(newLink);\n\n// STEP 5: Output result\nreturn [{\n  json: {\n    Title: $input.item.json.title,\n    Link: newLinkRaw,\n    Author: $input.item.json.author,\n    PubDate: $input.item.json.pubDate,\n    Summary: $input.item.json.summary,\n    check: isDuplicate ? \"true\" : \"false\"\n  },\n  binary: $input.item.binary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -112,
+        128
+      ],
+      "id": "dd77dc7f-e49d-4d1c-955d-3a4159864a56",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "905bd2da-8bfc-448f-b78d-401c212b700a",
+              "leftValue": "={{ $json.check }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        80,
+        128
+      ],
+      "id": "10a6df2c-9370-4571-b653-c86d46988257",
+      "name": "Is it duplicate?2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "author",
+              "value": "={{ $json.author }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{ $json.pubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "8da5e690-8b61-475a-bf31-21c950df98a1",
+              "name": "summary",
+              "value": "={{ $json.contentSnippet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -496,
+        112
+      ],
+      "id": "3dff9c82-fad9-4195-8a18-1ce3c098ce6d",
+      "name": "Filter for Limit 1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "author",
+              "value": "={{ $json.author }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{ $json.pubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "8da5e690-8b61-475a-bf31-21c950df98a1",
+              "name": "summary",
+              "value": "=",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -416,
+        272
+      ],
+      "id": "cec03de7-9f7e-4d3e-bf58-846bad073e8c",
+      "name": "Filter For Get(rows)"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=📰 **TITLE**: {{ $json.title }}\n\n🖊️ **AUTHOR**: {{ $json.author }}\n\n🗓️ **PUBLISHED DATE**: {{\n  new Date($json.pubDate || $json.PubDate)\n    .toLocaleString('en-GB', {\n      timeZone: 'Asia/Bangkok',\n      weekday: 'short',\n      day: '2-digit',\n      month: 'short',\n      year: 'numeric',\n    }) + \" (GMT+7)\"\n}}\n\n🧐 **DESCRIPTION** 🧐\n{{ $json.summary }}\n\n🌸 **More Info**: {{ $json.link }}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        496,
+        192
+      ],
+      "id": "acd0869c-f8bf-45d9-899e-f02a84e302fb",
+      "name": "CyCOM Offensive Cybersecurity Personnel14",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "gZrVYsFdcgGK1sc8",
+          "name": "Discord Webhook account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.bleepingcomputer.com/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        1312,
+        160
+      ],
+      "id": "11af0749-3726-43cc-afba-af4f248978c7",
+      "name": "RSS Read From BleepingComputer"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        624
+      ],
+      "id": "8bdf39cc-3dbc-46c3-afb6-245890d83040",
+      "name": "Limit5"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=📰 **TITLE**:  {{ $json.Title }}\n\n🖊️ **AUTHOR**: {{ $json.Creator }}\n\n🗓️ **PUBLISHED DATE**: \n{{\n  new Date($json.pubDate || $json.PubDate)\n    .toLocaleString('en-GB', {\n      timeZone: 'Asia/Bangkok',\n      weekday: 'short',\n      day: '2-digit',\n      month: 'short',\n      year: 'numeric',\n      hour: '2-digit',\n      minute: '2-digit',\n      hour12: false\n    }) + \" (GMT+7)\"\n}}\n\n🧐 **DESCRIPTION** 🧐\n{{ $json.Summary }}\n\n🌸 **More Info**: {{ $json.Link }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2736,
+        688
+      ],
+      "id": "f3b70f55-b5e0-433d-aae4-fb21a8ab3b72",
+      "name": "CyCOM Cyber Breaking News Reporter",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "W40VT3N2ezpRLMp9",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1488,
+        160
+      ],
+      "id": "4c26092d-1190-4f86-8d53-d4d5490d7963",
+      "name": "Limit3"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1920,
+        176
+      ],
+      "id": "dbf02e4b-0f84-45a5-a109-1e7a80063f6b",
+      "name": "Merge3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// STEP 1: Get and clean the new link from RSS\nconst newLinkRaw = $input.item.json.link?.trim();\nif (!newLinkRaw) {\n  return [{ json: { check: \"false\", error: \"No link found\" } }];\n}\n\n// STEP 2: Normalize URL for comparison\nfunction cleanUrl(url) {\n  try {\n    const u = new URL(url.trim());\n    return (u.origin + u.pathname).toLowerCase().replace(/\\/+$/, \"\");\n  } catch (err) {\n    return url.trim().toLowerCase().replace(/\\/+$/, \"\");\n  }\n}\nconst newLink = cleanUrl(newLinkRaw);\n\n// STEP 3: Get ALL existing links from sheet (input 1)\n// $input.all() returns [ new_item, sheet_row_1, sheet_row_2, ... ]\n// So skip the first item (it's the new one), and get links from the rest\nconst existingLinks = $input.all()\n  .slice(1) // all items from input 1 (sheet data)\n  .map(item => {\n    const link = item.json?.link || item.link;\n    return link ? cleanUrl(link) : null;\n  })\n  .filter(Boolean);\n\n// STEP 4: Check for duplicate\nconst isDuplicate = existingLinks.includes(newLink);\n\n// STEP 5: Output result\nreturn [{\n  json: {\n    Title: $input.item.json.title,\n    Link: newLinkRaw,\n    Author: $input.item.json.author,\n    PubDate: $input.item.json.pubDate,\n    Summary: $input.item.json.summary,\n    check: isDuplicate ? \"true\" : \"false\"\n  },\n  binary: $input.item.binary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2096,
+        176
+      ],
+      "id": "d700c102-e240-4ce9-881d-17651b303777",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "905bd2da-8bfc-448f-b78d-401c212b700a",
+              "leftValue": "={{ $json.check }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2288,
+        176
+      ],
+      "id": "4ca5bf21-eecd-421c-87c7-f46125ab3eb5",
+      "name": "Is it duplicate?4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "author",
+              "value": "={{ $json.creator }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{ new Date($json.pubDate).toLocaleDateString('en-US', { \n  timeZone: 'Asia/Bangkok', \n  weekday: 'short', \n  year: 'numeric', \n  month: 'short', \n  day: '2-digit' \n}) }}",
+              "type": "string"
+            },
+            {
+              "id": "8da5e690-8b61-475a-bf31-21c950df98a1",
+              "name": "summary",
+              "value": "={{ $json.contentSnippet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1712,
+        160
+      ],
+      "id": "88904ec6-090a-450f-b5ed-a7de6a277e18",
+      "name": "Filter for Limit "
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.Link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "author",
+              "value": "={{ $json.Author }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{ $json.PubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "8da5e690-8b61-475a-bf31-21c950df98a1",
+              "name": "summary",
+              "value": "={{ $json.Summary }}",
+              "type": "string"
+            },
+            {
+              "id": "9e199e5d-776a-4256-b02c-2881e71fe058",
+              "name": "check",
+              "value": "={{ $json.check }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        320
+      ],
+      "id": "7f94a55f-4a9e-4bf2-900f-0b1de7dba5e9",
+      "name": "Filter For Get(rows)1"
+    },
+    {
+      "parameters": {
+        "content": "Schedule weekly",
+        "height": 80,
+        "width": 176
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1088,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "4a8bb580-919b-4c94-bb7d-cf5fcb6aeefa",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "Schedule every day",
+        "height": 80,
+        "width": 160
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1088,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "dadbd361-8f01-4b6f-8e99-2d02d2732748",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        160
+      ],
+      "id": "a590f0d8-eaed-4635-8e03-30d787efd8c7",
+      "name": "Schedule Trigger4"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1072,
+        112
+      ],
+      "id": "ee617efc-16d1-479e-83d3-f2150ed2208c",
+      "name": "Schedule Trigger6"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        1120,
+        608
+      ],
+      "id": "f33b91ae-8655-4c27-9311-bbbe980dc17a",
+      "name": "Schedule Trigger7"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1088,
+        624
+      ],
+      "id": "c7f9222c-1d5a-419f-97d3-e2778427cef8",
+      "name": "Schedule Trigger8"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1217369653,
+          "mode": "list",
+          "cachedResultName": "HackerNews",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=1217369653"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $json.Title }}",
+            "link": "={{ $json.Link }}",
+            "author": "={{ $json.Author }}",
+            "pubDate": "={{ $json.PubDate }}",
+            "summary": "={{ $json.Summary }}"
+          },
+          "matchingColumns": [
+            "link"
+          ],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "author",
+              "displayName": "author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "pubDate",
+              "displayName": "pubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "summary",
+              "displayName": "summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        320,
+        192
+      ],
+      "id": "ae9753a8-0573-4302-9a52-fa1f51d5f0e9",
+      "name": "HackerNews Append/Update Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "BleepingComputers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Link": "={{ $json.Link }}",
+            "Title": "={{ $json.Title }}",
+            "PubDate": "={{ $json.PubDate }}",
+            "Author": "={{ $json.Author }}",
+            "Summary": "={{ $json.Summary }}",
+            "check": "={{ $json.check }}"
+          },
+          "matchingColumns": [
+            "Link"
+          ],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Author",
+              "displayName": "Author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "PubDate",
+              "displayName": "PubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "check",
+              "displayName": "check",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2544,
+        240
+      ],
+      "id": "5391ced6-b14c-43cf-b2bd-78ddae0837fd",
+      "name": "BleepingComputer Append/Update Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=📰 **TITLE**: {{ $json.Title }}\n\n🖊️ **AUTHOR**: {{ $json.Author }}\n\n🗓️ **PUBLISHED DATE**: {{ $json.PubDate }}\n\n🧐 **DESCRIPTION** 🧐\n{{ $json.Summary }}\n\n🌸 **More Info**: {{ $json.Link }}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        240
+      ],
+      "id": "f2abb7c1-d730-4d3b-8522-1afc8249efce",
+      "name": "CyCOM Defensive Cybersecurity Personnel3",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "oSjbSxplNFniKhvV",
+          "name": "Discord Webhook account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        80
+      ],
+      "id": "81fe1d7b-e804-4f89-98bf-613b710eaaba",
+      "name": "BleepingComputer Content Exists",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "oSjbSxplNFniKhvV",
+          "name": "Discord Webhook account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        496,
+        -32
+      ],
+      "id": "8aedc3f2-506e-4e5f-8cad-af7b41946946",
+      "name": "HackerNews Content Exists",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "gZrVYsFdcgGK1sc8",
+          "name": "Discord Webhook account 3"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -240,
+        592
+      ],
+      "id": "5f54e2ba-7fb0-435d-ab91-c6c72b9baf72",
+      "name": "Merge4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// STEP 1: Get and clean the new link from RSS\nconst newLinkRaw = $input.item.json.link?.trim();\nif (!newLinkRaw) {\n  return [{ json: { check: \"false\", error: \"No link found\" } }];\n}\n\n// STEP 2: Normalize URL for comparison\nfunction cleanUrl(url) {\n  try {\n    const u = new URL(url.trim());\n    return (u.origin + u.pathname).toLowerCase().replace(/\\/+$/, \"\");\n  } catch (err) {\n    return url.trim().toLowerCase().replace(/\\/+$/, \"\");\n  }\n}\nconst newLink = cleanUrl(newLinkRaw);\n\n// STEP 3: Get ALL existing links from sheet (input 1)\n// $input.all() returns [ new_item, sheet_row_1, sheet_row_2, ... ]\n// So skip the first item (it's the new one), and get links from the rest\nconst existingLinks = $input.all()\n  .slice(1) // all items from input 1 (sheet data)\n  .map(item => {\n    const link = item.json?.link || item.link;\n    return link ? cleanUrl(link) : null;\n  })\n  .filter(Boolean);\n\n// STEP 4: Check for duplicate\nconst isDuplicate = existingLinks.includes(newLink);\n\n// STEP 5: Output result\nreturn [{\n  json: {\n    Title: $input.item.json.title,\n    Link: newLinkRaw,\n    Author: $input.item.json.author,\n    PubDate: $input.item.json.pubDate,\n    Summary: $input.item.json.summary,\n    check: isDuplicate ? \"true\" : \"false\"\n  },\n  binary: $input.item.binary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        592
+      ],
+      "id": "910ff4ef-5932-4510-b10f-ff5beec6e85d",
+      "name": "Code4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "905bd2da-8bfc-448f-b78d-401c212b700a",
+              "leftValue": "={{ $json.check }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        128,
+        592
+      ],
+      "id": "19a644c0-d833-4937-a0b5-a15b066ed6fd",
+      "name": "Is it duplicate?5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "author",
+              "value": "={{ $json.creator }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{\n  new Date($json.pubDate || $json.PubDate)\n    .toLocaleString('en-GB', {\n      timeZone: 'Asia/Bangkok',\n      weekday: 'short',\n      day: '2-digit',\n      month: 'short',\n      year: 'numeric',\n    }) + \" (GMT+7)\"\n}}",
+              "type": "string"
+            },
+            {
+              "id": "058936a9-698e-4f3e-a353-7f1a4d4f0473",
+              "name": "summary",
+              "value": "={{ $json.content }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -448,
+        576
+      ],
+      "id": "27b1e7c1-1e1f-47ee-8f1e-3f8280143cfb",
+      "name": "Filter for Limit 2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.Link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "author",
+              "value": "={{ $json.Author }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{ $json.PubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "26f98a38-67fe-4771-8455-69bf30bd2ec3",
+              "name": "summary",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -368,
+        736
+      ],
+      "id": "a4e09c66-218c-4f00-9e6e-ed2efa55628f",
+      "name": "Filter For Get(rows)2"
+    },
+    {
+      "parameters": {
+        "content": "Schedule weekly",
+        "height": 80,
+        "width": 160
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1072,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "df7fbf32-3ee2-452b-950d-550d7c2c75de",
+      "name": "Sticky Note12"
+    },
+    {
+      "parameters": {
+        "content": "Schedule every day",
+        "height": 80,
+        "width": 160
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1104,
+        496
+      ],
+      "typeVersion": 1,
+      "id": "32a04e9b-3ed9-4aa7-b42c-8d590f41767e",
+      "name": "Sticky Note13"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        608
+      ],
+      "id": "8a74c7bd-ac09-47ff-af7f-00f4621ec9da",
+      "name": "Limit7"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1936,
+        624
+      ],
+      "id": "38877d06-510a-4dde-a569-dd69107ef6a2",
+      "name": "Merge6"
+    },
+    {
+      "parameters": {
+        "jsCode": "// STEP 1: Get and clean the new link from RSS\nconst newLinkRaw = $input.item.json.link?.trim();\nif (!newLinkRaw) {\n  return [{ json: { check: \"false\", error: \"No link found\" } }];\n}\n\n// STEP 2: Normalize URL for comparison\nfunction cleanUrl(url) {\n  try {\n    const u = new URL(url.trim());\n    return (u.origin + u.pathname).toLowerCase().replace(/\\/+$/, \"\");\n  } catch (err) {\n    return url.trim().toLowerCase().replace(/\\/+$/, \"\");\n  }\n}\nconst newLink = cleanUrl(newLinkRaw);\n\n// STEP 3: Get ALL existing links from sheet (input 1)\n// $input.all() returns [ new_item, sheet_row_1, sheet_row_2, ... ]\n// So skip the first item (it's the new one), and get links from the rest\nconst existingLinks = $input.all()\n  .slice(1) // all items from input 1 (sheet data)\n  .map(item => {\n    const link = item.json?.link || item.link;\n    return link ? cleanUrl(link) : null;\n  })\n  .filter(Boolean);\n\n// STEP 4: Check for duplicate\nconst isDuplicate = existingLinks.includes(newLink);\n\n// STEP 5: Output result\nreturn [{\n  json: {\n    Title: $input.item.json.title,\n    Link: newLinkRaw,\n    Creator: $input.item.json.creator,\n    PubDate: $input.item.json.pubDate,\n    Summary: $input.item.json.summary,\n    check: isDuplicate ? \"true\" : \"false\"\n  },\n  binary: $input.item.binary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2112,
+        624
+      ],
+      "id": "95c26229-c190-4a1b-a71f-370223fe4d77",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "905bd2da-8bfc-448f-b78d-401c212b700a",
+              "leftValue": "={{ $json.check }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2304,
+        624
+      ],
+      "id": "858e5060-8ebc-4ad7-9d21-441ea9301cfa",
+      "name": "Is it duplicate?7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "creator",
+              "value": "={{ $json.creator }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{\n  new Date($json.pubDate || $json.PubDate)\n    .toLocaleString('en-GB', {\n      timeZone: 'Asia/Bangkok',\n      weekday: 'short',\n      day: '2-digit',\n      month: 'short',\n      year: 'numeric',\n      hour: '2-digit',\n      minute: '2-digit',\n      hour12: false\n    }) + \" (GMT+7)\"\n}}",
+              "type": "string"
+            },
+            {
+              "id": "8da5e690-8b61-475a-bf31-21c950df98a1",
+              "name": "summary",
+              "value": "={{ $json.contentSnippet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1728,
+        608
+      ],
+      "id": "bf886e54-17f5-4632-83eb-7e480de9ad39",
+      "name": "Filter for Limit 4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.Link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "author",
+              "value": "={{ $json.Creator }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{ $json.PubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "8da5e690-8b61-475a-bf31-21c950df98a1",
+              "name": "summary",
+              "value": "={{ $json.Summary }}",
+              "type": "string"
+            },
+            {
+              "id": "ba3a234c-c179-4859-9dfb-f69afb06f130",
+              "name": "check",
+              "value": "={{ $json.check }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1808,
+        768
+      ],
+      "id": "9427ede2-2cba-4073-837b-91a25f6afbfc",
+      "name": "Filter For Get(rows)4"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        560,
+        496
+      ],
+      "id": "01fb2fe5-a0eb-409a-8435-5082795d244c",
+      "name": "CISA Content Exists",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "oSjbSxplNFniKhvV",
+          "name": "Discord Webhook account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": " https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1217369653,
+          "mode": "list",
+          "cachedResultName": "HackerNews",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=1217369653"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -576,
+        272
+      ],
+      "id": "5126c0e3-3a36-486f-8c9e-f5c06d44a8ed",
+      "name": "Get row(s) in HackerNews",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": " https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "BleepingComputers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1632,
+        320
+      ],
+      "id": "269a0b99-7224-405c-89ce-c95283506b4e",
+      "name": "Get row(s) in BleepingComputer",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": " https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1405279082,
+          "mode": "list",
+          "cachedResultName": "CISA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=1405279082"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -528,
+        736
+      ],
+      "id": "e404a031-3546-4d63-bf87-cee5cafd6b00",
+      "name": "Get row(s) in CISA",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1405279082,
+          "mode": "list",
+          "cachedResultName": "CISA",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=1405279082"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Link": "={{ $json.Link }}",
+            "Title": "={{ $json.Title }}",
+            "Author": "={{ $json.Author }}",
+            "PubDate": "={{ $json.PubDate }}",
+            "check": "={{ $json.check }}",
+            "Summary": "={{ $json.Summary }}"
+          },
+          "matchingColumns": [
+            "Link"
+          ],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Author",
+              "displayName": "Author",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "PubDate",
+              "displayName": "PubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "check",
+              "displayName": "check",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        384,
+        656
+      ],
+      "id": "c93bb5b5-4ca4-4475-b5ee-3d6308ffa386",
+      "name": "CISA Append/Update Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=📰 **TITLE**:  {{ $json.Title }}\n\n🖊️ **AUTHOR**: {{ $json.Author }}\n\n🗓️ **PUBLISHED DATE**: {{ $json.PubDate }}\n\n🧐 **DESCRIPTION** 🧐\n{{ $json.Summary }}\n\nPlease read more below. Encouraging you to read full documnets!!!\nCybersecurity Specialists read a lot, you know... 🥸\n\n🌸 **More Info**: {{ $json.Link }}\n\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        560,
+        656
+      ],
+      "id": "1749ce76-d60e-4013-9b3b-aa4689f14c7e",
+      "name": "CyCOM Defensive Cybersecurity Personnel4",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "oSjbSxplNFniKhvV",
+          "name": "Discord Webhook account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Status: Working",
+        "height": 80,
+        "width": 150,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        928,
+        496
+      ],
+      "typeVersion": 1,
+      "id": "b9bc1d7d-e2f2-4270-a08f-f9a5f697657f",
+      "name": "Sticky Note14"
+    },
+    {
+      "parameters": {
+        "content": "Status: Working",
+        "height": 80,
+        "width": 150,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1248,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "02da389a-58e6-4d88-b72e-d257e049d823",
+      "name": "Sticky Note15"
+    },
+    {
+      "parameters": {
+        "content": "Status: Working",
+        "height": 80,
+        "width": 150,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1264,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "8f861f54-7047-409b-b545-921cbff54556",
+      "name": "Sticky Note16"
+    },
+    {
+      "parameters": {
+        "content": "Status: Working\n",
+        "height": 80,
+        "width": 150,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        912,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "354e1fb5-0bdf-43aa-885b-abcedc01f04a",
+      "name": "Sticky Note17"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dcfa8c83-3bf6-4330-a600-d57378c90cc9",
+              "name": "message",
+              "value": "=\n  {{ ['Jesus, where are the vulnerabilities... I need to hack people for fun... 💔', 'What are you looking at, punk? 🤬', 'Don\\'t trust the WiFi. Ever. ☠️', 'I\\'m watching the logs while you\\'re sleeping... 👀', 'Hacking is not a crime... unless I get caught. 🕶️', 'One ping to rule them all... 💻💣', 'Updating threat intel... and your nightmares.'][Math.floor(Math.random() * 7)] }}\n\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        -32
+      ],
+      "id": "4e83bd93-9cca-4c55-b16a-316a0c6c99fb",
+      "name": "Random message"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dcfa8c83-3bf6-4330-a600-d57378c90cc9",
+              "name": "message",
+              "value": "={{ [\n  \"Monitoring suspicious activity... sleep tight. 🛡️👀\",\n  \"Patch it before they breach it. 🔒🩹\",\n  \"Firewall's hot tonight — someone's probing again. 🔥🧱\",\n  \"Threat detected. Response activated. 💻⚡\",\n  \"I don’t sleep, I log. 📊🧠\",\n  \"Analyzing threat vectors while you scroll TikTok... 📱🧠\",\n  \"When was the last time you change your password, hah?\",\n  \"What's 9+10?\",\n  \"No news today...is security unbreakable, now?\",\n  \"Securing the perimeter — attackers are persistent today. 🚨🧍‍♂️\"\n][Math.floor(Math.random() * 10)] }}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        384,
+        496
+      ],
+      "id": "79850127-e97e-46e0-8612-4e56b58f0086",
+      "name": "Random message1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dcfa8c83-3bf6-4330-a600-d57378c90cc9",
+              "name": "message",
+              "value": "={{\n[\n  \"📢 Breaking from SecurityWeek: Another zero-day. You updating or nah?\",\n  \"Uhh, no news today yall... I'm going back to sleep 💔🥀\",\n  \"Still no MFA? You're basically inviting them in. 🚪💀\",\n  \"Perimeter's holding. But for how long? �⏳\",\n  \"I told my wife she was drawing her eyebrows too high. She looked surprised. 😲✍️\\n\\nget it?\",\n  \"Threat intel updated. You can blink now. 👀🛡️\",\n  \"📊 New report's out: patch fatigue is real, and so are attackers.\",\n  \"Why did the server get cold?\\n\\nIt left its Windows open. 🥶🪟 hahahaha\\n\\nPlease laugh\",\n  \"Latest SecurityWeek headline: Yep, they're still phishing. 🎣💻\",\n  \"Me: monitoring APTs. You: opening sketchy PDFs. 📎😩\",\n  \"🚨 Real-time alert: Threat actors don't take breaks. Neither do we.\",\n  \"This is Bob. There are no news today. How unfortunate\",\n  \"Security posture: holding steady. But your WiFi password still '123456'? 🙃🔐\",\n  \"I told my wife she should embrace her mistakes...\\nShe hugged me. 🫂💔\",\n  \"Why can't your nose be 12 inches long?\\nBecause then it would be a foot. 👃🦶\"\n][Math.floor(Math.random() * 14)]\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2560,
+        512
+      ],
+      "id": "8a8f47dd-3299-468d-a77d-70b381e5c9d2",
+      "name": "Random message2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dcfa8c83-3bf6-4330-a600-d57378c90cc9",
+              "name": "message",
+              "value": "={{\n[\n  \"📢 **Zero-day dropped!** Patching? *[Insert ‘*👀*’ or ‘*💀*’ based on your security posture]*\",  \n  \"**MFA off?** Congrats, you’re *literally* handing hackers a VIP pass. �🖥️ #NoMFANoMercy\",  \n  \"**Perimeter secure.** Threat actors: *‘Bet.’* 🧱⚡ *[Insert ‘*🤡*’ if unpatched]*\",  \n  \"**Why did the ransomware break up with the firewall?** *It needed space… to encrypt.* 🥀🔒 #CyberHumor\",  \n  \"**PSA:** If your password is ‘*admin123*’, you’re *not* him. 🔐🚮 #ChangeItChamp\",  \n  \"**New vuln alert!** *[CVE-*🤷‍♂️*-2023]* Patching is *free therapy* for sysadmins. 🛠️💆‍♂️\",  \n  \"**Phishing email:** ‘*Urgent: Your cat video won!’* **You:** *[Opens attachment]* **Also you:** *‘Why is my PC singing Baby Shark?’* 🎣💻\",  \n  \"**Threat intel says:** *‘APT group* ☕*’* is sipping tea while you ignore updates. ☕⚡\",  \n  \"**Why do hackers love coffee?** *Because they excel at* ***brewing*** *exploits.* ☕🐛 #DadJokeSec\",  \n  \"**WiFi password = ‘*password*’?** *Bold move.* Let’s see how that plays out. 🎲📡\",  \n  \"**SOC analyst mood:** *‘I detect* 🚨 *threats… and* 🍕 *hunger.’* 🛡️🍕 #Priorities\",  \n  \"**Patch Tuesday:** *‘Ah yes, my weekly dose of existential dread.’* 💻⚡\",  \n  \"**Why did the botnet go to therapy?** *Too many* ***connections*** *issues.* 🕷️💔 #CyberPuns\",  \n  \"**Latest headline:** *‘Hackers:* 🤝 *Unpatched systems =* 💰’ *[Shocked Pikachu face]* 🐱⚡\",  \n  \"**No news today.** *[Cue tumbleweed]* 🌵😴 *But check your logs.* 📊👀\"  \n][Math.floor(Math.random() * 15)]\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2544,
+        80
+      ],
+      "id": "424813d9-ef46-438d-a290-1beececf57e4",
+      "name": "Random message3"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=📰 TITLE:  {{ $json.Title }}\n\n🖊️ AUTHOR: {{ $json.Creator }}\n\n🗓️ PUBLISHED DATE: {{ $json.PubDate }}\n\n🧐 DESCRIPTION 🧐\n{{ $json.Summary }}\n\n🌸 More Info: {{ $json.Link }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        3584,
+        1120
+      ],
+      "id": "9577da1e-3dde-4f1e-b96c-a0ceb45b7e3e",
+      "name": "CyCOM Cyber Breaking News Reporter1",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "W40VT3N2ezpRLMp9",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://securityaffairs.com/category/hacking/feed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        1312,
+        608
+      ],
+      "id": "71464970-ce2f-43dc-ab41-e4ea257e06a9",
+      "name": "RSS Read From SecurityAffairs"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": " https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 801660878,
+          "mode": "list",
+          "cachedResultName": "SecurityWeeks",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=801660878"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1648,
+        768
+      ],
+      "id": "aa3aa6bd-443c-4f85-8320-5591d2a7e2f0",
+      "name": "Get row(s) in SecurityAffairs",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 801660878,
+          "mode": "list",
+          "cachedResultName": "SecurityWeeks",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=801660878"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $json.Title }}",
+            "Link": "={{ $json.Link }}",
+            "Creator": "={{ $json.Creator }}",
+            "PubDate": "={{ $json.PubDate }}",
+            "Summary": "={{ $json.Summary }}",
+            "check": "={{ $json.check }}"
+          },
+          "matchingColumns": [
+            "Link"
+          ],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Creator",
+              "displayName": "Creator",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "PubDate",
+              "displayName": "PubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "check",
+              "displayName": "check",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        2560,
+        688
+      ],
+      "id": "acbf854a-d08e-4120-8068-bc17e6f33254",
+      "name": "SecurityAffairs Append/Update Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.message }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        512
+      ],
+      "id": "8d7a0879-897b-4f5b-b0d3-11d7a6420ad5",
+      "name": "SecurityAffairs Content Exists",
+      "webhookId": "0ecb97f0-9184-43c9-a2ce-8000718da06d",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "W40VT3N2ezpRLMp9",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://tldrsec.com/feed.xml",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -912,
+        624
+      ],
+      "id": "01455ea6-2673-4fba-b04d-8f6ccb2e2cae",
+      "name": "RSS Read From CISA"
+    },
+    {
+      "parameters": {
+        "content": "Automation via AWS EC2 is working successfully\n\nDeadline of the AWS EC2 Service: 27th January 2026",
+        "height": 80,
+        "width": 400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        592,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "d90cb790-7ce6-4f9d-9fc5-89b6cd129542",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger8": [
+      {
+        "json": {
+          "timestamp": "2025-07-29T03:26:05.375-04:00",
+          "Readable date": "July 29th 2025, 3:26:05 am",
+          "Readable time": "3:26:05 am",
+          "Day of week": "Tuesday",
+          "Year": "2025",
+          "Month": "July",
+          "Day of month": "29",
+          "Hour": "03",
+          "Minute": "26",
+          "Second": "05",
+          "Timezone": "Asia/Bangkok (GMT +7)"
+        }
+      }
+    ],
+    "Schedule Trigger6": [
+      {
+        "json": {
+          "timestamp": "2025-07-29T03:32:11.190-04:00",
+          "Readable date": "July 29th 2025, 3:32:11 am",
+          "Readable time": "3:32:11 am",
+          "Day of week": "Tuesday",
+          "Year": "2025",
+          "Month": "July",
+          "Day of month": "29",
+          "Hour": "03",
+          "Minute": "32",
+          "Second": "11",
+          "Timezone": "Asia/Bangkok (GMT +7)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "RSS Read From HackerNews6": {
+      "main": [
+        [
+          {
+            "node": "Limit14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit14": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in HackerNews",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter for Limit 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Is it duplicate?2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it duplicate?2": {
+      "main": [
+        [
+          {
+            "node": "Random message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HackerNews Append/Update Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter for Limit 1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter For Get(rows)": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "RSS Read From BleepingComputer": {
+      "main": [
+        [
+          {
+            "node": "Limit3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit5": {
+      "main": [
+        [
+          {
+            "node": "Filter for Limit 2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in CISA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit3": {
+      "main": [
+        [
+          {
+            "node": "Filter for Limit ",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in BleepingComputer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge3": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "Is it duplicate?4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it duplicate?4": {
+      "main": [
+        [
+          {
+            "node": "Random message3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "BleepingComputer Append/Update Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter for Limit ": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter For Get(rows)1": {
+      "main": [
+        [
+          {
+            "node": "Merge3",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger4": {
+      "main": [
+        [
+          {
+            "node": "RSS Read From BleepingComputer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger6": {
+      "main": [
+        [
+          {
+            "node": "RSS Read From HackerNews6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger7": {
+      "main": [
+        [
+          {
+            "node": "RSS Read From SecurityAffairs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger8": {
+      "main": [
+        [
+          {
+            "node": "RSS Read From CISA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HackerNews Append/Update Sheets": {
+      "main": [
+        [
+          {
+            "node": "CyCOM Offensive Cybersecurity Personnel14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BleepingComputer Append/Update Sheets": {
+      "main": [
+        [
+          {
+            "node": "CyCOM Defensive Cybersecurity Personnel3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge4": {
+      "main": [
+        [
+          {
+            "node": "Code4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code4": {
+      "main": [
+        [
+          {
+            "node": "Is it duplicate?5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it duplicate?5": {
+      "main": [
+        [
+          {
+            "node": "Random message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CISA Append/Update Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter for Limit 2": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter For Get(rows)2": {
+      "main": [
+        [
+          {
+            "node": "Merge4",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Limit7": {
+      "main": [
+        [
+          {
+            "node": "Filter for Limit 4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in SecurityAffairs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge6": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "Is it duplicate?7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it duplicate?7": {
+      "main": [
+        [
+          {
+            "node": "Random message2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SecurityAffairs Append/Update Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter for Limit 4": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter For Get(rows)4": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get row(s) in HackerNews": {
+      "main": [
+        [
+          {
+            "node": "Filter For Get(rows)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in BleepingComputer": {
+      "main": [
+        [
+          {
+            "node": "Filter For Get(rows)1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in CISA": {
+      "main": [
+        [
+          {
+            "node": "Filter For Get(rows)2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CISA Append/Update Sheets": {
+      "main": [
+        [
+          {
+            "node": "CyCOM Defensive Cybersecurity Personnel4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Random message": {
+      "main": [
+        [
+          {
+            "node": "HackerNews Content Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Random message1": {
+      "main": [
+        [
+          {
+            "node": "CISA Content Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Random message2": {
+      "main": [
+        [
+          {
+            "node": "SecurityAffairs Content Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Random message3": {
+      "main": [
+        [
+          {
+            "node": "BleepingComputer Content Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read From SecurityAffairs": {
+      "main": [
+        [
+          {
+            "node": "Limit7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in SecurityAffairs": {
+      "main": [
+        [
+          {
+            "node": "Filter For Get(rows)4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SecurityAffairs Append/Update Sheets": {
+      "main": [
+        [
+          {
+            "node": "CyCOM Cyber Breaking News Reporter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read From CISA": {
+      "main": [
+        [
+          {
+            "node": "Limit5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "9b23c60d-6275-49b8-9aa8-e9677eda7e40",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3d6a9587541a95a5a41563002a6eddf6ae378be3f9274d5bf3dd2a486ec3d28e"
+  },
+  "id": "zawGeT3ssx77sLZt",
+  "tags": []
+}
