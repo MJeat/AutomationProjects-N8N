@@ -1,0 +1,569 @@
+{
+  "name": "CyCOM Telegram CyberNews Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -256,
+        -64
+      ],
+      "id": "9c734a26-7799-4ae9-8258-ab98ac04d3e7",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "chatId": "-1002259448058",
+        "text": "=*🚨 CYBERSECURITY ALERT*\n\n*📌 TITLE:* {{ $json.Title }}\n*✍️ AUTHOR:* {{ $json.Creator }}\n*🗓️ DATE:* {{ $json.PubDate }}\n\n*📋 SUMMARY:*\n{{ $json.Summary }}\n\n🔗 *Read More:* \n{{ $json.Link }}\n\n*📝 Need similar info from CYCOM?* \nFB page (https://www.facebook.com/CycomCyber)\nFB group (https://www.facebook.com/groups/2316318252097007)\nTelegram Channel (https://t.me/CyCommunity)\nIG (https://www.instagram.com/cambodiacyberyouthcommunity?igsh=MWxkZTg1b3ZiN3F6aw%3D%3D&utm_source=qr)\nTikTok (https://www.tiktok.com/@cambodiacyberyouthcom?is_from_webapp=1&sender_device=pc)",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        16
+      ],
+      "id": "172c3360-9e27-4272-9276-f2b5b22ab832",
+      "name": "Send a text message",
+      "webhookId": "7f54a731-3022-4b89-81ff-f207b97e206a",
+      "credentials": {
+        "telegramApi": {
+          "id": "4gPszrMX60h4aeAz",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://securityaffairs.com/category/hacking/feed",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1.2,
+      "position": [
+        -80,
+        -64
+      ],
+      "id": "c49aef6e-9f5d-4716-a8b3-32ad12de0667",
+      "name": "RSS Read From SecurityAffairs"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -64
+      ],
+      "id": "30d7b6ac-e224-4876-b07e-00f25bc22160",
+      "name": "Limit"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        560,
+        -48
+      ],
+      "id": "65227b4d-87a4-4664-b185-ef5a03ce9b04",
+      "name": "Merge6"
+    },
+    {
+      "parameters": {
+        "jsCode": "// STEP 1: Get and clean the new link from RSS\nconst newLinkRaw = $input.item.json.link?.trim();\nif (!newLinkRaw) {\n  return [{ json: { check: \"false\", error: \"No link found\" } }];\n}\n\n// STEP 2: Normalize URL for comparison\nfunction cleanUrl(url) {\n  try {\n    const u = new URL(url.trim());\n    return (u.origin + u.pathname).toLowerCase().replace(/\\/+$/, \"\");\n  } catch (err) {\n    return url.trim().toLowerCase().replace(/\\/+$/, \"\");\n  }\n}\nconst newLink = cleanUrl(newLinkRaw);\n\n// STEP 3: Get ALL existing links from sheet (input 1)\n// $input.all() returns [ new_item, sheet_row_1, sheet_row_2, ... ]\n// So skip the first item (it's the new one), and get links from the rest\nconst existingLinks = $input.all()\n  .slice(1) // all items from input 1 (sheet data)\n  .map(item => {\n    const link = item.json?.link || item.link;\n    return link ? cleanUrl(link) : null;\n  })\n  .filter(Boolean);\n\n// STEP 4: Check for duplicate\nconst isDuplicate = existingLinks.includes(newLink);\n\n// STEP 5: Output result\nreturn [{\n  json: {\n    Title: $input.item.json.title,\n    Link: newLinkRaw,\n    Creator: $input.item.json.creator,\n    PubDate: $input.item.json.pubDate,\n    Summary: $input.item.json.summary,\n    check: isDuplicate ? \"true\" : \"false\"\n  },\n  binary: $input.item.binary\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        -48
+      ],
+      "id": "894af23e-6239-4742-a871-51736c790605",
+      "name": "Code6"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "905bd2da-8bfc-448f-b78d-401c212b700a",
+              "leftValue": "={{ $json.check }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        928,
+        -48
+      ],
+      "id": "e8a49eb9-4468-433b-9d58-4f8ef9345d73",
+      "name": "Is it duplicate?7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "creator",
+              "value": "={{ $json.creator }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{\n  new Date($json.pubDate || $json.PubDate)\n    .toLocaleString('en-GB', {\n      timeZone: 'Asia/Bangkok',\n      weekday: 'short',\n      day: '2-digit',\n      month: 'short',\n      year: 'numeric',\n    }) + \" (GMT+7)\"\n}}",
+              "type": "string"
+            },
+            {
+              "id": "8da5e690-8b61-475a-bf31-21c950df98a1",
+              "name": "summary",
+              "value": "={{ $json.contentSnippet }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        -64
+      ],
+      "id": "2f1566c5-ede3-446c-8191-26ff1d4ef942",
+      "name": "Filter for Limit 4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2050eb01-0d16-4f28-898e-cd1d4ac4775a",
+              "name": "title",
+              "value": "={{ $json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "c0c9f41a-fc91-4921-a310-8df19b7fedeb",
+              "name": "link",
+              "value": "={{ $json.Link }}",
+              "type": "string"
+            },
+            {
+              "id": "7949995e-3491-4ded-b6bc-4b7d21d621c0",
+              "name": "author",
+              "value": "={{ $json.Creator }}",
+              "type": "string"
+            },
+            {
+              "id": "65d2d994-51e4-417d-be08-7d3fc64f6a03",
+              "name": "pubDate",
+              "value": "={{ $json.PubDate }}",
+              "type": "string"
+            },
+            {
+              "id": "8da5e690-8b61-475a-bf31-21c950df98a1",
+              "name": "summary",
+              "value": "={{ $json.Summary }}",
+              "type": "string"
+            },
+            {
+              "id": "ba3a234c-c179-4859-9dfb-f69afb06f130",
+              "name": "check",
+              "value": "={{ $json.check }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        96
+      ],
+      "id": "053f3e62-14ae-4ef4-a1df-22e06082c941",
+      "name": "Filter For Get(rows)4"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dcfa8c83-3bf6-4330-a600-d57378c90cc9",
+              "name": "message",
+              "value": "={{\n[\n  \"📢 Breaking from SecurityWeek: Another zero-day. You updating or nah?\",\n\n  \"Uhh, no news today yall... I'm going back to sleep 💔🥀\",\n\n  \"I told my wife she was drawing her eyebrows too high. She looked surprised. 😲✍️\\n\\nget it?\",\n\n  \"Threat intel updated. You can blink now. 👀🛡️\",\n\n  \"📊 New report's out: patch fatigue is real, and so are attackers.\",\n\n  \"Why did the server get cold?\\n\\nIt left its Windows open. 🥶🪟 hahahaha\\n\\nPlease laugh\",\n\n  \"Latest SecurityWeek headline: Yep, they're still phishing. 🎣💻\",\n\n  \"Me: monitoring APTs. You: opening sketchy PDFs. 📎😩\",\n\n  \"🚨 Real-time alert: Threat actors don't take breaks. Neither do we.\",\n\n  \"This is Bob. There are no news today. How unfortunate\",\n\n  \"Security posture: holding steady. But your WiFi password still '123456'? 🙃🔐\",\n\n  \"I told my wife she should embrace her mistakes...\\nShe hugged me. 🫂💔\",\n\n  \"Why can't your nose be 12 inches long?\\nBecause then it would be a foot. 👃🦶\",\n\n  \"ម៉ាក់ខ្ញុំថារៀនសាយប័រហេីយទៅយាមគេមែន 💔🥀\",\n\n   \"Bruh សាយប័រ ខានណត ហេកយ័រក្រាសacc 😔\",\n\n   \"GenZ lv jes hack ot ng\",\n\n   \"ខំរៀនណាប្អូនៗ។ ចូរចងចាំកាលសង្គ្រាមជាមួយ ah ស ៀ ម ⛔️\",\n\n   \"គេថាអាយធីអត់សង្សារច្រេីន ចុះសាយប័រវិញ🥱🧐\",\n\n   \"Sngat mes...Reaction klas mor kon khmer kom oy ke tha ot support knea\",\n][Math.floor(Math.random() * 18)]\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1184,
+        -160
+      ],
+      "id": "2a754e98-1585-4ca9-a0d3-8741ce0ff33b",
+      "name": "Random message2"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1930600840,
+          "mode": "list",
+          "cachedResultName": "Telegram CyCOM CyberNewsBot",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=1930600840"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Title": "={{ $json.Title }}",
+            "Link": "={{ $json.Link }}",
+            "Creator": "={{ $json.Creator }}",
+            "PubDate": "={{ $json.PubDate }}",
+            "Summary": "={{ $json.Summary }}",
+            "check": "={{ $json.check }}"
+          },
+          "matchingColumns": [
+            "Link"
+          ],
+          "schema": [
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Link",
+              "displayName": "Link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Creator",
+              "displayName": "Creator",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "PubDate",
+              "displayName": "PubDate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "check",
+              "displayName": "check",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1184,
+        16
+      ],
+      "id": "bc5cebf4-2d71-4f97-b3ad-d06f85eda4b6",
+      "name": "Telegram Bot Append/Update Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A",
+          "mode": "list",
+          "cachedResultName": "Copy of CyCOM CyberNews testing1",
+          "cachedResultUrl": " https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1930600840,
+          "mode": "list",
+          "cachedResultName": "Telegram CyCOM CyberNewsBot",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1_hRMJ7VPgJMqaE_lxe-WQADXGFqXGzV4VXFvrtbNm2A/edit#gid=1930600840"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        272,
+        96
+      ],
+      "id": "d43bd2fc-a2c5-4ffa-957c-7f73235e014d",
+      "name": "Get row(s) in Telegram Bot",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "77lakudXX86iuI2R",
+          "name": "Google Sheets account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "-1002259448058",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1376,
+        -160
+      ],
+      "id": "88505490-431f-4e04-be99-5c45ce22bdad",
+      "name": "Send a text message1",
+      "webhookId": "7f54a731-3022-4b89-81ff-f207b97e206a",
+      "credentials": {
+        "telegramApi": {
+          "id": "4gPszrMX60h4aeAz",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Read From SecurityAffairs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Read From SecurityAffairs": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Filter for Limit 4",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in Telegram Bot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge6": {
+      "main": [
+        [
+          {
+            "node": "Code6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code6": {
+      "main": [
+        [
+          {
+            "node": "Is it duplicate?7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it duplicate?7": {
+      "main": [
+        [
+          {
+            "node": "Random message2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram Bot Append/Update Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter for Limit 4": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter For Get(rows)4": {
+      "main": [
+        [
+          {
+            "node": "Merge6",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Random message2": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Bot Append/Update Sheets": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in Telegram Bot": {
+      "main": [
+        [
+          {
+            "node": "Filter For Get(rows)4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f5f57578-79a3-41ef-9958-4e3313303e68",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3d6a9587541a95a5a41563002a6eddf6ae378be3f9274d5bf3dd2a486ec3d28e"
+  },
+  "id": "A0t4BAMsEwOppf2y",
+  "tags": []
+}
